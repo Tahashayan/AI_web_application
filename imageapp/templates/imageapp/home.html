@@ -1,0 +1,379 @@
+{% extends 'imageapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<div class="main-wrapper">
+    <div class="app-container">
+        
+        <div class="brand-section">
+            <div class="brand-content">
+                <span class="ai-tag">✨ AI-Powered Studio</span>
+                <h1 class="hero-title">Transform Your<br> Photos in<br> Seconds.</h1>
+                <p class="hero-subtitle">Pro-quality image enhancement and background removal, automated.</p>
+                
+                <div class="comparison-wrapper shadow-lg">
+                    <div class="comp-header">
+                        <i class="bi bi-shuffle me-1"></i> Drag to compare quality
+                    </div>
+                    
+                    <div class="comparison-slider" id="image-comparison-slider">
+                    <img src="https://res.cloudinary.com/dztfgu0fs/image/upload/v1775471624/processed/enhanced/md0souj8ay1juweviugx.png" alt="AI Enhanced" class="img-after">
+
+                    <img src="https://res.cloudinary.com/dztfgu0fs/image/upload/v1775471594/media/uploads/pic_l1lxq1.jpg" alt="Original" class="img-before">
+
+                    <div class="slider-handle" id="slider-handle">
+                        <div class="handle-circle">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+                    </div>
+                
+                    <span class="label label-after">AI Enhanced</span>
+                    <span class="label label-before">Original</span>
+                </div>
+                </div>
+                </div>
+        </div>
+
+        <div class="action-section">
+            <div class="form-content">
+                <div class="upload-header">
+                    <h2>Get Started</h2>
+                    <p class="text-muted">Upload an image to start the magic.</p>
+                </div>
+                
+                <form method="POST" enctype="multipart/form-data" id="upload-form">
+                    {% csrf_token %}
+                    
+                    <div class="upload-zone" id="drop-zone">
+                        <input type="file" name="{{ form.original_image.name }}" id="id_original_image" class="file-input" accept="image/*" hidden>
+                        
+                        <label for="id_original_image" class="w-100 h-100 d-flex flex-column align-items-center justify-content-center cursor-pointer">
+                            <div id="upload-prompt" class="upload-prompt text-center">
+                                <div class="icon-orb">
+                                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                                </div>
+                                <h5>Drop your image here</h5>
+                                <p class="small text-muted mb-0">Supports JPG, PNG, WEBP</p>
+                                <span class="browse-link btn btn-outline-primary rounded-pill mt-3 px-4">Browse Files</span>
+                            </div>
+
+                            <div id="preview-container" class="preview-container d-none">
+                                <div class="preview-wrapper">
+                                    <img id="image-preview" src="#" alt="Preview" class="img-fluid rounded shadow">
+                                    <span class="change-photo-badge"><i class="bi bi-arrow-repeat me-1"></i>Change Image</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="action-buttons d-flex gap-3 mt-4">
+                        <button type="submit" name="action" value="remove_bg" id="btn-remove-bg" class="btn btn-action-primary btn-lg flex-grow-1 disabled" disabled>
+                            <i class="bi bi-eraser-fill me-2"></i>Remove BG
+                        </button>
+                        <button type="submit" name="action" value="enhance" id="btn-enhance" class="btn btn-action-secondary btn-lg flex-grow-1 disabled" disabled>
+                            <i class="bi bi-magic me-2"></i>Enhance
+                        </button>
+                    </div>
+                </form>
+                
+                <footer class="form-footer mt-5 text-center">
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-shield-check text-success me-1"></i> Secure processing. We prioritize your privacy.
+                    </p>
+                </footer>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* --- 1. THEME VARIABLES --- */
+:root {
+    --primary: #6366f1; 
+    --primary-hover: #4f46e5;
+    --accent: #22d3ee;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --font-family: 'Inter', sans-serif;
+    --slider-pos: 50%; /* Used for JS interaction */
+}
+
+body {
+    background-color: #f1f5f9;
+    font-family: var(--font-family);
+    color: var(--text-main);
+}
+
+/* --- 2. LAYOUT --- */
+.main-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.app-container {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    background: #ffffff;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- 3. LEFT SECTION (BRANDING) --- */
+.brand-section {
+    flex: 1.1;
+    background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
+    padding: 4.5rem;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+}
+
+.hero-title { font-size: 3.2rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; }
+.hero-subtitle { font-size: 1.2rem; opacity: 0.85; margin-bottom: 3rem; }
+.ai-tag {
+    background: rgba(255,255,255, 0.15);
+    backdrop-filter: blur(5px);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+}
+
+/* --- 4. THE COMPARISON SLIDER BOX --- */
+.comparison-wrapper {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    overflow: hidden;
+    position: relative;
+}
+
+.comp-header {
+    background: rgba(0,0,0,0.15);
+    padding: 10px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.8);
+}
+
+.comparison-slider {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/11;
+    overflow: hidden;
+    cursor: ew-resize;
+    border-radius: 0 0 24px 24px; 
+}
+
+.comparison-slider img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 120%;
+    object-fit: cover;
+    display: block;
+}
+
+.img-before {
+    z-index: 2;
+    /* This clips the image instead of resizing it */
+    clip-path: inset(0 calc(100% - var(--slider-pos, 50%)) 0 0);
+}
+
+.img-after {
+    z-index: 1;
+}
+
+.slider-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--slider-pos, 50%);
+    width: 2px;
+    background: white;
+    z-index: 3;
+    pointer-events: none;
+    transform: translateX(-50%); /* Perfectly centers the line on the clip */
+}
+
+.handle-circle {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px; height: 40px;
+    background: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--primary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    font-size: 1.2rem;
+}
+
+.label {
+    position: absolute; bottom: 12px;
+    background: rgba(0,0,0,0.5);
+    color: white; font-size: 0.7rem;
+    padding: 4px 10px; border-radius: 4px;
+    pointer-events: none;
+    z-index: 4;
+}
+.label-before { left: 12px; }
+.label-after { right: 12px; }
+
+/* --- 5. RIGHT SECTION (ACTION) --- */
+.action-section { flex: 1; padding: 4rem; display: flex; align-items: center; justify-content: center; }
+.form-content { width: 100%; max-width: 420px; }
+
+.upload-zone {
+    width: 100%; aspect-ratio: 1/1;
+    background-color: #f8fafc;
+    border: 3px dashed #e2e8f0;
+    border-radius: 32px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-zone:hover, .upload-zone.dragging {
+    border-color: var(--primary);
+    background-color: #f0f4ff;
+}
+
+.icon-orb {
+    width: 80px; height: 80px;
+    background: white; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: var(--primary); font-size: 2.2rem;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.preview-container { width: 100%; height: 100%; padding: 1.5rem; }
+.preview-wrapper { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+#image-preview { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.change-photo-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: white; color: var(--text-main);
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 0.75rem; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* --- 6. BUTTONS --- */
+.btn-action-primary {
+    background: var(--primary); color: white; border: none; border-radius: 16px;
+    font-weight: 700; padding: 14px; transition: all 0.2s;
+}
+.btn-action-primary:not(.disabled):hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); }
+
+.btn-action-secondary {
+    background: #f1f5f9; color: var(--text-main); border: 1px solid #e2e8f0;
+    border-radius: 16px; font-weight: 700; padding: 14px;
+}
+
+.cursor-pointer { cursor: pointer; }
+
+/* --- 7. RESPONSIVE --- */
+@media (max-width: 992px) {
+    .app-container { flex-direction: column; border-radius: 0; }
+    .brand-section, .action-section { padding: 2.5rem 1.5rem; }
+    .hero-title { font-size: 2.2rem; }
+    .comparison-wrapper { margin: 0 auto; }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // --- PART 1: File Upload & Preview Logic ---
+    const fileInput = document.getElementById('id_original_image');
+    const dropZone = document.getElementById('drop-zone');
+    const previewContainer = document.getElementById('preview-container');
+    const uploadPrompt = document.getElementById('upload-prompt');
+    const imagePreview = document.getElementById('image-preview');
+    const actionBtns = [document.getElementById('btn-remove-bg'), document.getElementById('btn-enhance')];
+
+    function enableButtons() {
+        actionBtns.forEach(btn => {
+            btn.classList.remove('disabled');
+            btn.removeAttribute('disabled');
+        });
+    }
+
+    function handleFiles(files) {
+        if (files && files[0]) {
+            imagePreview.src = URL.createObjectURL(files[0]);
+            previewContainer.classList.remove('d-none');
+            uploadPrompt.classList.add('d-none');
+            enableButtons();
+        }
+    }
+
+    fileInput.onchange = e => handleFiles(e.target.files);
+
+    // Drag and Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+    });
+
+    dropZone.addEventListener('dragover', () => dropZone.classList.add('dragging'));
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+    dropZone.addEventListener('drop', e => {
+        dropZone.classList.remove('dragging');
+        fileInput.files = e.dataTransfer.files;
+        handleFiles(e.dataTransfer.files);
+    });
+
+    // --- PART 2: Comparison Slider Logic ---
+    const slider = document.getElementById('image-comparison-slider');
+    let isDragging = false;
+
+    function moveSlider(e) {
+        if (!isDragging) return;
+        const rect = slider.getBoundingClientRect();
+
+        // Get X position relative to the slider box
+        let x = (e.pageX || (e.touches ? e.touches[0].pageX : 0)) - rect.left;
+
+        // Convert to percentage (0 to 100)
+        let pos = (x / rect.width) * 100;
+
+        // Clamp between 0% and 100%
+        if (pos < 0) pos = 0;
+        if (pos > 100) pos = 100;
+
+        // Update the CSS variable
+        slider.style.setProperty('--slider-pos', pos + '%');
+    }
+
+    // Event Listeners
+    slider.addEventListener('mousedown', () => isDragging = true);
+    slider.addEventListener('touchstart', () => isDragging = true);
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('touchend', () => isDragging = false);
+    window.addEventListener('mousemove', moveSlider);
+    window.addEventListener('touchmove', moveSlider);
+    });
+</script>
+{% endblock %}

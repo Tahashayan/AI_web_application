@@ -1,0 +1,156 @@
+{% extends 'imageapp/base.html' %}
+
+{% block content %}
+<style>
+    /* Styling to make thumbnails look clickable */
+    .thumb-img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: zoom-in;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .thumb-img:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    /* Checkered background for PNGs with transparent backgrounds */
+    .bg-checkered {
+        background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                          linear-gradient(135deg, #ccc 25%, transparent 25%),
+                          linear-gradient(45deg, transparent 75%, #ccc 75%),
+                          linear-gradient(135deg, transparent 75%, #ccc 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 10px 0, 10px -10px, 0px 10px;
+        background-color: white;
+    }
+</style>
+
+<div class="container mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">My Image History</h2>
+        <a href="{% url 'home' %}" class="btn btn-primary btn-custom">Upload New Image</a>
+    </div>
+
+    {% if tasks %}
+        <div class="upload-card p-0 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="text-center py-3">S.No</th>
+                            <th scope="col" class="py-3">Date & Time</th>
+                            <th scope="col" class="py-3">Original Image</th>
+                            <th scope="col" class="py-3">Processed Image</th>
+                            <th scope="col" class="py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <!-- 1. Serial Number (Using Django's loop counter) -->
+                            <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                            
+                            <!-- 2. Date and Time -->
+                            <td>
+                                <div class="fw-bold">{{ task.uploaded_at|date:"M d, Y" }}</div>
+                                <div class="text-muted small">{{ task.uploaded_at|date:"h:i A" }}</div>
+                            </td>
+                            
+                            <!-- 3. Source Image (Thumbnail) -->
+                            <td>
+                                <img src="{{ task.original_image.url }}" 
+                                     class="thumb-img border preview-trigger" 
+                                     data-full-src="{{ task.original_image.url }}" 
+                                     alt="Original">
+                            </td>
+                            
+                            <!-- 4. Converted Image (Thumbnail) -->
+                            <td>
+                                {% if task.bg_removed_image %}
+                                    <img src="{{ task.bg_removed_image }}" 
+                                         class="thumb-img border bg-checkered preview-trigger" 
+                                         data-full-src="{{ task.bg_removed_image }}" 
+                                         alt="BG Removed">
+                                    <span class="badge bg-primary ms-2">BG Removed</span>
+                                {% elif task.enhanced_image %}
+                                    <img src="{{ task.enhanced_image }}" 
+                                         class="thumb-img border preview-trigger" 
+                                         data-full-src="{{ task.enhanced_image }}" 
+                                         alt="Enhanced">
+                                    <span class="badge bg-success ms-2">Enhanced</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Processing Failed</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- 5. Action (Download & Delete) -->
+                            <td class="text-nowrap">
+                                <!-- Download Button -->
+                                {% if task.bg_removed_image %}
+                                    <a href="{{ task.bg_removed_image }}" download class="btn btn-outline-primary btn-sm fw-bold">Download</a>
+                                {% elif task.enhanced_image %}
+                                    <a href="{{ task.enhanced_image }}" download class="btn btn-outline-success btn-sm fw-bold">Download</a>
+                                {% else %}
+                                    <button class="btn btn-outline-secondary btn-sm" disabled>N/A</button>
+                                {% endif %}
+
+                                <!-- Delete Button -->
+                                <form action="{% url 'delete_task' task.id %}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Are you sure you want to delete this image?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm fw-bold">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info rounded-4 p-4 text-center mt-4">
+            <h5 class="mb-3">You haven't processed any images yet!</h5>
+            <p class="mb-0">Head over to the home page to start removing backgrounds or enhancing images.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Bootstrap Modal for Image Preview -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content border-0 bg-transparent shadow-none">
+      <div class="modal-header border-0 pb-0 justify-content-end">
+        <button type="button" class="btn-close btn-close-white fs-4" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+      </div>
+      <div class="modal-body text-center p-0 mt-2 relative">
+        <!-- This image source gets replaced by JavaScript on click -->
+        <img id="fullSizeImage" src="" class="img-fluid rounded shadow-lg bg-checkered" style="max-height: 80vh;" alt="Full Preview">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript to handle the image preview clicks -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Find all thumbnail images
+        const thumbnails = document.querySelectorAll('.preview-trigger');
+        const fullSizeImage = document.getElementById('fullSizeImage');
+        const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+
+        thumbnails.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                // Get the high-res URL stored in data-full-src
+                const imgSrc = this.getAttribute('data-full-src');
+                
+                // Update the modal image source
+                fullSizeImage.src = imgSrc;
+                
+                // Show the modal
+                modal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

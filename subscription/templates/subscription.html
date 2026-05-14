@@ -1,0 +1,151 @@
+{% extends 'imageapp/base.html' %}
+
+{% block content %}
+<style>
+    /* Custom CSS for SaaS-style Pricing Cards */
+    .pricing-header {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .pricing-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        overflow: hidden;
+    }
+    /* Hover floating effect */
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+    }
+    /* Highlight the PRO plan */
+    .card-pro {
+        border: 2px solid #0d6efd;
+        box-shadow: 0 10px 15px -3px rgba(13, 110, 253, 0.15);
+        position: relative;
+    }
+    .popular-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-color: #0d6efd;
+        color: white;
+        padding: 6px 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        border-bottom-left-radius: 15px;
+    }
+    /* Checkmark styling */
+    .check-icon {
+        color: #198754; /* Bootstrap success green */
+        font-weight: bold;
+        margin-right: 10px;
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Page Header -->
+    <div class="text-center pricing-header mb-5">
+        <h1 class="display-4 fw-bold mb-3">Simple, transparent pricing</h1>
+        <p class="lead text-muted">Choose the perfect plan for your image processing needs. Upgrade or cancel at any time.</p>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4 justify-content-center">
+        
+        <!-- 1. LITE PLAN -->
+        <div class="col">
+            <div class="pricing-card h-100 p-4 d-flex flex-column">
+                <div class="mb-4">
+                    <h4 class="fw-bold text-muted mb-2">Lite</h4>
+                    <p class="text-muted small">Perfect for casual users and side projects.</p>
+                    <h2 class="display-5 fw-bold mb-0">$9<span class="fs-5 text-muted fw-normal">/mo</span></h2>
+                </div>
+                
+                <ul class="list-unstyled mb-4 flex-grow-1">
+                    <li class="mb-3"><span class="check-icon">✓</span> 100 Image Credits</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Standard Resolution</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Background Removal</li>
+                    <li class="mb-3 text-muted"><span class="me-2 text-muted">-</span> No AI Enhancement</li>
+                    <li class="mb-3 text-muted"><span class="me-2 text-muted">-</span> Basic Email Support</li>
+                </ul>
+                
+                <div class="mt-auto">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="price_id" value="{{ subscription.lite }}">
+                        <button type="submit" class="btn btn-outline-primary btn-lg w-100 rounded-pill fw-bold">
+                        Get Lite
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PRO PLAN (Highlighted) -->
+        <div class="col">
+            <div class="pricing-card card-pro h-100 p-4 d-flex flex-column">
+                <div class="popular-badge">MOST POPULAR</div>
+                <div class="mb-4">
+                    <h4 class="fw-bold text-primary mb-2">Pro</h4>
+                    <p class="text-muted small">For professionals who need high-quality results.</p>
+                    <h2 class="display-5 fw-bold mb-0">$29<span class="fs-5 text-muted fw-normal">/mo</span></h2>
+                </div>
+                
+                <ul class="list-unstyled mb-4 flex-grow-1">
+                    <li class="mb-3"><span class="check-icon">✓</span> 1,000 Image Credits</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> 4K High Resolution</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Background Removal</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> AI Quality Enhancement</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Priority Support</li>
+                </ul>
+                
+                <div class="mt-auto">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="price_id" value="{{ subscription.pro }}">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm">
+                        Upgrade to Pro
+                    </button>
+                </form>
+            </div>
+            </div>
+        </div>
+
+        <!-- 3. VOLUME+ PLAN -->
+        <div class="col">
+            <div class="pricing-card h-100 p-4 d-flex flex-column">
+                <div class="mb-4">
+                    <h4 class="fw-bold text-dark mb-2">Volume+</h4>
+                    <p class="text-muted small">For agencies, e-commerce, and high-volume needs.</p>
+                    <h2 class="display-5 fw-bold mb-0">$99<span class="fs-5 text-muted fw-normal">/mo</span></h2>
+                </div>
+                
+                <ul class="list-unstyled mb-4 flex-grow-1">
+                    <li class="mb-3"><span class="check-icon">✓</span> 10,000 Image Credits</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Everything in Pro</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> API Access</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> Batch Processing</li>
+                    <li class="mb-3"><span class="check-icon">✓</span> 24/7 Dedicated Support</li>
+                </ul>
+                
+                <div class="mt-auto">
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="price_id" value="{{ subscription.volume }}">
+                    <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill fw-bold">
+                        Get Volume+
+                    </button>
+                </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- FAQ or Trust section -->
+    <div class="text-center mt-5 pt-4 border-top">
+        <p class="text-muted mb-0">Secure payments powered by <strong>Stripe</strong>. Cancel your subscription anytime.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'imageapp/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <h2 class="fw-bold mb-4">Account & Subscription</h2>
+            
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+            <h5 class="fw-bold border-bottom pb-3 mb-4">Your API Token</h5>
+            <p class="text-muted small mb-2">Use this token to access the API from anywhere.</p>
+
+            <div class="input-group">
+                <input type="password" id="apiToken" class="form-control font-monospace"
+                       value="{{ api_token }}" readonly>
+                <button class="btn btn-outline-secondary" onclick="toggleToken()">Show</button>
+                <button class="btn btn-outline-primary" onclick="copyToken()">Copy</button>
+            </div>
+
+            </div>
+            </div>
+
+            <script>
+            function toggleToken() {
+                const input = document.getElementById('apiToken');
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+            function copyToken() {
+                const input = document.getElementById('apiToken');
+                navigator.clipboard.writeText(input.value);
+                alert('Token copied!');
+            }
+            </script>
+
+            <!-- 1. Usage Stats Card -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold border-bottom pb-3 mb-4">Usage Statistics</h5>
+
+                    <div class="row text-center">
+                        <div class="col-md-6 border-end mb-3 mb-md-0">
+                            <h1 class="display-5 fw-bold text-primary">
+                                {{ profile.credits_remaining }}
+                            </h1>
+                            <p class="text-muted mb-0">Credits Remaining</p>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h1 class="display-5 fw-bold text-success">
+                                {{ profile.total_images_processed }}
+                            </h1>
+                            <p class="text-muted mb-0">Total Images Processed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Subscription Card -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+
+                    <h5 class="fw-bold border-bottom pb-3 mb-4">
+                        Current Plan
+                    </h5>
+
+                    {% if subscription %}
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+
+                            <div>
+                                <h3 class="fw-bold text-dark mb-1">
+                                    {{ subscription.product_name }} Plan
+                                </h3>
+
+                                <p class="text-muted mb-0">
+                                    ${{ subscription.price }} / month
+                                </p>
+                            </div>
+
+                            {% if not subscription.is_canceled %}
+                                <a href="{% url 'subscription' %}"
+                                   class="btn btn-primary btn-custom fw-bold">
+                                    Upgrade Plan
+                                </a>
+                            {% endif %}
+
+                        </div>
+
+                        <!-- ACTIVE STATE -->
+                        {% if not subscription.is_canceled %}
+
+                            <div class="alert alert-light border rounded-3 mb-4">
+                                <i class="text-success fw-bold me-2">✓</i>
+                                Your plan is active.
+                                You receive credits every billing cycle.
+                            </div>
+
+                            <!-- CANCEL BUTTON -->
+                            <div class="border-top pt-4 text-end">
+                                <form action="{% url 'cancel_subscription' subscription.subscription_id %}"
+                                      method="POST"
+                                      onsubmit="return confirm('Are you sure you want to cancel? You will still have access until the end of billing cycle.');">
+
+                                    {% csrf_token %}
+
+                                    <button type="submit"
+                                            class="btn btn-outline-danger fw-bold">
+                                        Cancel Subscription
+                                    </button>
+
+                                </form>
+
+                                <p class="text-muted small mt-2">
+                                    Canceling stops future billing. Access remains until expiration.
+                                </p>
+                            </div>
+
+                        {% else %}
+
+                            <!-- CANCELED STATE -->
+                            <div class="alert alert-warning border rounded-3">
+                                ❌ Your subscription is canceled.
+                                It will remain active until the end of billing period.
+                            </div>
+
+                            {% if subscription.end_date %}
+                                <p class="text-muted small mt-2">
+                                    Expires on: {{ subscription.end_date }}
+                                </p>
+                            {% endif %}
+
+                        {% endif %}
+
+                    {% else %}
+
+                        <!-- FREE TIER -->
+                        <h3 class="fw-bold text-dark mb-1">Free Tier</h3>
+                        <p class="text-muted mb-3">Pay as you go</p>
+
+                        <a href="{% url 'subscription' %}"
+                           class="btn btn-primary btn-custom fw-bold">
+                            Upgrade Plan
+                        </a>
+
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

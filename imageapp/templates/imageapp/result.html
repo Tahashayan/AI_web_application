@@ -1,0 +1,248 @@
+{% extends 'imageapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<div class="main-wrapper">
+    <div class="app-container">
+        
+        <div class="result-side border-end">
+            <div class="result-content">
+                <span class="status-tag tag-before">Original Photo</span>
+                <h2 class="result-title">Before</h2>
+                
+                <div class="image-frame shadow-sm">
+                    <!-- Added id="original-image" to read natural dimensions -->
+                    <img src="{{ image_task.original_image.url }}" id="original-image" class="img-display" alt="Original Image">
+                </div>
+            </div>
+        </div>
+
+        <div class="result-side bg-light-alt">
+            <div class="result-content">
+                <span class="status-tag tag-after">
+                    {% if action == 'remove_bg' %}Background Removed{% else %}AI Enhanced{% endif %}
+                </span>
+                <h2 class="result-title">After</h2>
+                
+                <div class="image-frame shadow-sm {% if action == 'remove_bg' %}transparent-bg{% endif %}">
+                    {% if action == 'remove_bg' and image_task.bg_removed_image %}
+                        <img src="{{ image_task.bg_removed_image }}" class="img-display" alt="No Background">
+                    {% elif action == 'enhance' and image_task.enhanced_image %}
+                        <img src="{{ image_task.enhanced_image }}" class="img-display" alt="Enhanced Image">
+                    {% else %}
+                        <div class="error-placeholder">
+                            <i class="bi bi-exclamation-triangle fs-1"></i>
+                            <p class="mt-2">Processing failed</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="action-footer mt-4 d-flex gap-3">
+                    {% if action == 'remove_bg' and image_task.bg_removed_image %}
+                        <!-- Changed href to javascript and added onclick -->
+                        <a href="javascript:void(0);" onclick="forceDownload('{{ image_task.bg_removed_image }}', 'background-removed.png')" class="btn btn-action-primary btn-lg flex-grow-1">
+                            <i class="bi bi-download me-2"></i>Download PNG
+                        </a>
+                    {% elif action == 'enhance' and image_task.enhanced_image %}
+                        <!-- Changed href to javascript and added onclick -->
+                        <a href="javascript:void(0);" onclick="forceDownload('{{ image_task.enhanced_image }}', 'enhanced-result.jpg')" class="btn btn-action-primary btn-lg flex-grow-1">
+                            <i class="bi bi-download me-2"></i>Download Result
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'home' %}" class="btn btn-action-secondary btn-lg" title="Upload Another">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+/* --- 1. CORE THEME --- */
+:root {
+    --primary: #6366f1;
+    --primary-grad: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
+    --text-main: #1e293b;
+}
+
+body {
+    background-color: #f1f5f9;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+}
+
+.main-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+}
+
+.app-container {
+    display: flex;
+    width: 100%;
+    max-width: 1200px;
+    background: #ffffff;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- 2. SIDE LAYOUT --- */
+.result-side {
+    flex: 1;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-width: 0;
+}
+
+.bg-light-alt { background-color: #f8fafc; }
+
+.result-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 1.5rem;
+}
+
+/* --- 3. THE FIX: MATCHING FORMAT & NO BLACK BARS --- */
+.image-frame {
+    width: 100%;
+    /* Default aspect ratio fallback, dynamically updated by JS */
+    aspect-ratio: 4 / 3; 
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: block;
+}
+
+.img-display {
+    width: 100%;
+    height: 100%;
+    /* 'cover' scales the image to fully fill the synced container. 
+       This automatically zooms in and crops out the AI's artificial black bars. */
+    object-fit: cover; 
+    object-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+}
+
+/* Fallback state style */
+.error-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Checkerboard for Transparent BG */
+.transparent-bg {
+    background-image: linear-gradient(45deg, #e5e7eb 25%, transparent 25%), linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e5e7eb 75%), linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* --- 4. UI ELEMENTS --- */
+.status-tag {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; padding: 5px 12px; border-radius: 100px;
+    margin-bottom: 0.75rem; display: inline-block;
+}
+.tag-before { background: #e2e8f0; color: #475569; }
+.tag-after { background: var(--primary-grad); color: white; }
+
+/* --- 5. BUTTONS --- */
+.btn-action-primary {
+    background: var(--primary-grad); color: white; border: none; 
+    border-radius: 14px; font-weight: 700; padding: 14px 20px; 
+    transition: all 0.2s; font-size: 0.95rem;
+}
+.btn-action-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(99, 102, 241, 0.3); color: white; }
+
+.btn-action-secondary {
+    background: #ffffff; color: var(--text-main); border: 2px solid #e2e8f0;
+    border-radius: 14px; padding: 14px; width: 60px;
+}
+
+/* --- 6. RESPONSIVE --- */
+@media (max-width: 992px) {
+    .app-container { flex-direction: column; border-radius: 24px; }
+    .result-side { padding: 2rem; border-right: none !important; }
+}
+</style>
+
+<!-- SYNC IMAGE ASPECT RATIO SCRIPT -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const originalImg = document.getElementById('original-image');
+        
+        // This function forces both boxes to use the original photo's native aspect ratio
+        function syncAspectRatios() {
+            if (originalImg.naturalWidth && originalImg.naturalHeight) {
+                const ratio = originalImg.naturalWidth / originalImg.naturalHeight;
+                const frames = document.querySelectorAll('.image-frame');
+                
+                frames.forEach(frame => {
+                    frame.style.aspectRatio = ratio;
+                });
+            }
+        }
+
+        if (originalImg) {
+            if (originalImg.complete) {
+                syncAspectRatios();
+            } else {
+                originalImg.addEventListener('load', syncAspectRatios);
+            }
+        }
+    });
+    function forceDownload(url, filename) {
+        // Fetch the image as a blob (file data)
+        fetch(url)
+            .then(response => response.blob())
+            .then(blob => {
+                // Create a temporary local URL for the downloaded blob
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                // Create an invisible anchor tag
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = filename; // This forces the download dialog
+                
+                // Append, click, and clean up
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup to free up browser memory
+                window.URL.revokeObjectURL(blobUrl);
+                document.body.removeChild(a);
+            })
+            .catch(err => {
+                console.error('Download failed, opening in new tab instead:', err);
+                // Fallback: If strict server rules block the fetch, open it normally
+                window.open(url, '_blank');
+            });
+    }
+</script>
+
+{% endblock %}
