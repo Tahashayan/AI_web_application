@@ -18,8 +18,8 @@ VALID_MODELS = [
 
 def get_session(model_name):
     if model_name not in VALID_MODELS:
-        print(f"⚠️ Invalid model '{model_name}', fallback to 'u2net'")
-        model_name = "u2net"
+        print(f"⚠️ Invalid model '{model_name}', fallback to 'u2net_human_seg'")
+        model_name = "u2net_human_seg"
 
     if model_name not in SESSION_CACHE:
         print(f" Loading model: {model_name}")
@@ -44,10 +44,10 @@ def resize_if_needed(img, max_size=2048):
 
 # ================= MAIN FUNCTION =================
 def remove_background(input_image,
-                      output_path=None,   # ✅ FIXED
-                      model_name="u2net",
-                      alpha_matting=False,
-                      post_process=True,
+                      output_path=None,   
+                      model_name="u2net_human_seg", # ✅ FIX 1: Must be human model to ignore the circle
+                      alpha_matting=False,          # ✅ FIX 2: OFF (This was eating the shoes)
+                      post_process=False,           # ✅ FIX 3: OFF (This was also eating the shoes)
                       max_size=2048):
 
     # -------- Load Image --------
@@ -75,12 +75,13 @@ def remove_background(input_image,
                 img_processed,
                 session=session,
                 alpha_matting=True,
-                alpha_matting_foreground_threshold=240,
-                alpha_matting_background_threshold=10,
-                alpha_matting_erode_size=10
+                alpha_matting_foreground_threshold=240, 
+                alpha_matting_background_threshold=10,  
+                alpha_matting_erode_size=10             
             )
         else:
-            result = remove(img_processed, session=session)
+            # ✅ This raw removal without matting is safest for delicate edges like shoes
+            result = remove(img_processed, session=session) 
 
     except Exception as e:
         print(f" Error: {e}")
@@ -95,7 +96,7 @@ def remove_background(input_image,
     if post_process:
         result = clean_edges(result)
 
-    # -------- Save Output (IMPORTANT FIX) --------
+    # -------- Save Output --------
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         save_transparent(result, output_path)
@@ -134,16 +135,14 @@ def save_transparent(image, output_path):
             image = image.convert("RGBA")
         image.save(output_path, "WEBP", lossless=True)
 
-    # ---------------- JPG (FIXED) ----------------
+    # ---------------- JPG ----------------
     elif ext in [".jpg", ".jpeg"]:
-        # Convert RGBA → RGB with white background
         if image.mode == "RGBA":
-            background = Image.new("RGB", image.size, (255, 255, 255))  # white bg
-            background.paste(image, mask=image.split()[3])  # use alpha as mask
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            background.paste(image, mask=image.split()[3])
             image = background
         else:
             image = image.convert("RGB")
-
         image.save(output_path, "JPEG", quality=95)
 
     # ---------------- TIFF ----------------
@@ -160,3 +159,18 @@ def save_transparent(image, output_path):
 
     print(f" Saved: {output_path}")
     return output_path
+
+
+# ================= USAGE EXAMPLE =================
+if __name__ == "__main__":
+    input_file = "input.jpg"   
+    output_file = "output.png" 
+
+    try:
+        remove_background(
+            input_image=input_file,
+            output_path=output_file
+        )
+        print("Process completed successfully!")
+    except Exception as e:
+        print(f"Failed to process image: {e}")

@@ -46,28 +46,9 @@ def enhance_image(input_path, output_path):
 
     try:
         # =========================
-        # STEP 1 — GFPGAN
+        # STEP 1 — Setup Real-ESRGAN (Background Upsampler)
         # =========================
-        face_enhancer = GFPGANer(
-            model_path=os.path.join(MODEL_DIR, "GFPGANv1.4.pth"),
-            upscale=1,
-            arch="clean",
-            channel_multiplier=2,
-            bg_upsampler=None,
-            device=DEVICE
-        )
-
-        _, _, face_restored = face_enhancer.enhance(
-            img,
-            has_aligned=False,
-            only_center_face=False,
-            paste_back=True,
-            weight=0.9
-        )
-
-        # =========================
-        # STEP 2 — Real-ESRGAN
-        # =========================
+        # We must set this up FIRST so we can pass it to GFPGAN
         rrdbnet = RRDBNet(
             num_in_ch=3,
             num_out_ch=3,
@@ -77,7 +58,7 @@ def enhance_image(input_path, output_path):
             scale=4
         )
 
-        upsampler = RealESRGANer(
+        bg_upsampler = RealESRGANer(
             scale=4,
             model_path=os.path.join(MODEL_DIR, "RealESRGAN_x4plus.pth"),
             model=rrdbnet,
@@ -88,7 +69,27 @@ def enhance_image(input_path, output_path):
             device=DEVICE
         )
 
-        final_img, _ = upsampler.enhance(face_restored, outscale=4)
+        # =========================
+        # STEP 2 — Setup GFPGAN and Execute
+        # =========================
+        face_enhancer = GFPGANer(
+            model_path=os.path.join(MODEL_DIR, "GFPGANv1.4.pth"),
+            upscale=4,             # MATCH THIS to the Real-ESRGAN scale
+            arch="clean",
+            channel_multiplier=2,
+            bg_upsampler=bg_upsampler, # <--- THIS IS THE FIX
+            device=DEVICE
+        )
+
+        # Because we passed bg_upsampler to GFPGAN, this single call 
+        # handles BOTH the face restoration AND the background upscaling.
+        _, _, final_img = face_enhancer.enhance(
+            img,
+            has_aligned=False,
+            only_center_face=False,
+            paste_back=True,
+            weight=0.9
+        )
 
         # =========================
         # Save Output
