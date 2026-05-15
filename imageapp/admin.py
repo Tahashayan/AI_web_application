@@ -11,8 +11,6 @@ class UserProfileAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.exclude(user__is_superuser = True) 
-    
-admin.site.register(Subscription)
 
 @admin.register(SystemLog)
 class SystemLogAdmin(admin.ModelAdmin):
